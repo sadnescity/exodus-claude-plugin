@@ -1,7 +1,7 @@
 {
   "name": "exodus",
   "description": "Exodus Emulation Platform MCP integration for Claude Code: CPU debugging (M68000, Z80) with full registers, memory read/write/search, disassembly, breakpoints, memory watchpoints, VDP state/sprites/palette/nametables/VRAM/CRAM/VSRAM, and system control. 24 MCP tools for Mega Drive/Genesis reverse engineering.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "author": { "name": "Ombra", "email": "ombra@sadnescity.it" },
   "homepage": "https://github.com/sadnescity/",
   "license": "MIT"
