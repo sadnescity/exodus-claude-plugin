@@ -27,7 +27,7 @@ All tools accept addresses as hex strings or integers:
 - Motorola: `"$FF0000"` (preferred for M68000)
 - C-style: `"0xFF0000"`
 - Zilog: `"FF0000h"` (for Z80)
-- Integer: `16711680`
+- Integer: `16711680` (a bare number without `$`, `0x` or `h` is always decimal)
 
 All addresses returned by tools use the Motorola `$XXXXXX` convention.
 
@@ -78,6 +78,6 @@ All addresses returned by tools use the Motorola `$XXXXXX` convention.
 - Ensure ExodusMCP.dll is in the Assemblies folder and a system module is loaded
 - The server only binds to localhost (127.0.0.1) -- remote connections are not supported, and requests with a non-local `Origin` header are rejected with 403
 - Most tools need a system module to be loaded -- load a Mega Drive module first
-- Memory read max size is 4096 bytes per call. Use `search_memory` for finding patterns across larger ranges
+- Memory read max size is 4096 bytes per call (larger `length` values are clamped). Use `search_memory` for finding patterns across larger ranges
 - Device names must match the instance names shown by `list_devices`
 - CPU tools (registers, memory, disassembly, breakpoints, step) require a processor device name

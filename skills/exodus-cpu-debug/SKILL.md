@@ -10,7 +10,7 @@ All address parameters accept:
 - Motorola hex string: `"$FF0000"` (preferred for M68000)
 - C-style hex string: `"0xFF0000"`
 - Zilog hex string: `"FF0000h"` (for Z80)
-- Plain integer: `16711680`
+- Plain integer: `16711680` (a bare number without `$`, `0x` or `h` is always read as decimal, so `"FF0000"` does not work)
 
 All addresses returned by tools use the Motorola `$XXXXXX` convention.
 
@@ -51,7 +51,7 @@ D2=$00000003  A2=$00000200
 ...
 PC=$00204E  SR=$2700  SSP=$00FF8000  USP=$00000000
 ```
-For other processors, returns PC only.
+For other processors (including the Z80), returns the PC only, e.g. `PC=$000123`.
 
 ## Memory Access (2 tools)
 
@@ -63,7 +63,7 @@ For other processors, returns PC only.
 **read_memory parameters:**
 - `device` (string, required) -- processor instance name, e.g. `"Main 68000"`
 - `address` (string or int, required) -- start address, e.g. `"$FF0000"` or `16711680`
-- `length` (int, required) -- number of bytes, 1-4096. For larger ranges use `search_memory`
+- `length` (int, required) -- number of bytes, max 4096 (larger values are clamped). For larger ranges use `search_memory`
 
 **write_memory parameters:**
 - `device` (string, required) -- processor instance name, e.g. `"Main 68000"`
@@ -82,7 +82,7 @@ For other processors, returns PC only.
 - `device` (string, required) -- processor instance name, e.g. `"Main 68000"`
 - `hex` (string, required) -- hex byte pattern without spaces or prefix, e.g. `"00FF8000"` for bytes 00 FF 80 00
 - `start` (string or int, optional) -- start address, default `"$000000"`
-- `end` (string or int, optional) -- end address, default `"$FFFFFF"`
+- `end` (string or int, optional) -- last address searched (inclusive), default `"$FFFFFF"` for every device: pass `"$FFFF"` when searching the Z80
 
 Returns list of matching addresses (max 64 results):
 ```
@@ -174,15 +174,15 @@ When a watchpoint triggers, emulation pauses. Use `read_cpu_registers()` to see 
 
 **read_vram parameters:**
 - `address` (string or int, required) -- VRAM address, e.g. `"$0000"`. Range: $0000-$FFFF
-- `length` (int, required) -- bytes to read, 1-4096
+- `length` (int, required) -- bytes to read, clamped at the end of VRAM. Keep it to a few KB (e.g. 4096) per call to limit the response size
 
 **read_cram parameters:**
 - `address` (string or int, required) -- CRAM address, e.g. `"$00"`. Range: $00-$7F
-- `length` (int, required) -- bytes to read, 1-128
+- `length` (int, required) -- bytes to read, 1-128 (clamped at the end of CRAM)
 
 **read_vsram parameters:**
 - `address` (string or int, required) -- VSRAM address, e.g. `"$00"`. Range: $00-$4F
-- `length` (int, required) -- bytes to read, 1-80
+- `length` (int, required) -- bytes to read, 1-80 (clamped at the end of VSRAM). Entries alternate plane A / plane B per 2-cell column
 
 **Notes:**
 - These access VDP memory directly, not through the 68K address space.
@@ -204,13 +204,15 @@ When a watchpoint triggers, emulation pauses. Use `read_cpu_registers()` to see 
 
 ### read_sprite_table
 
-No parameters. Returns plain text table (up to 80 sprites, stops at link chain end):
+No parameters. Returns plain text table (up to 80 entries):
 ```
 #    X      Y     W  H  Pat     Pal  Pri HF VF Link
-0    128    200   2x2 $1A0   0    1   0  0  1
-1    144    200   2x2 $1A4   0    1   0  0  0
+0    256    328   1x1 $1A0   0    1   0  0  1
+1    272    328   1x1 $1A4   0    1   0  0  0
 ```
-Width/height in cells (8px each). Pattern is the VRAM tile index.
+- Values are raw attribute table fields: X/Y include the +128 offset (screen X = X-128, screen Y = Y-128), so the rows above are at screen (128,200) and (144,200).
+- W/H are size codes 0-3, i.e. cells minus 1 (`1x1` = 2x2 cells = 16x16 px). Pattern is the VRAM tile index.
+- Entries are listed in table order (#0, #1, #2...), not by following the links; the listing stops at the first entry after #0 whose Link is 0. Follow the Link column yourself to get the real drawing order.
 
 ### read_palette
 
@@ -224,8 +226,8 @@ Palette 0:
 ### read_nametable
 
 - `plane` (string, required) -- must be `"a"`, `"b"`, or `"window"`
-- `row_start` (int, optional) -- first row to read, default 0
-- `row_count` (int, optional) -- number of rows to read, default 8
+- `row_start` (int, optional) -- first row to read, default 0 (a value beyond the plane height falls back to 0)
+- `row_count` (int, optional) -- number of rows to read, default 8 (clamped to the plane height)
 
 Returns per-cell columnar format:
 ```
@@ -239,6 +241,7 @@ Row Col Pat     Pal Pri HF VF
 - Pat = VRAM tile index (each tile is 32 bytes at `pattern * $20`)
 - Pal = palette row 0-3. Pri = priority. HF/VF = horizontal/vertical flip
 - Default returns 8 rows. Use `row_start`/`row_count` to page through the full plane
+- The window plane is 64x32 cells in H40 and 32x32 in H32, whatever the scroll plane size
 
 ### read_vdp_state
 
@@ -281,6 +284,8 @@ Use the Read tool on the returned path to view the image when visual context is 
 - `x` (int, required) -- horizontal pixel position (0 = left edge). H32: 0-255, H40: 0-319
 - `y` (int, required) -- vertical pixel position (0 = top edge). V28: 0-223, V30: 0-239
 
+Out-of-range coordinates return an error with the actual frame size. The first call after loading enables the VDP pixel info buffer and returns an error instead of data: run the system for at least one frame (`run_system()`, then `stop_system()`), then call again.
+
 Returns detailed per-pixel rendering info:
 ```
 Pixel (128,100)
@@ -289,6 +294,7 @@ Color: R=32 G=64 B=224 (#2040E0)
 Palette: row 1, entry 5
 HCounter=384 VCounter=100
 Mapping VRAM addr: $C108
+Mapping data: $201A
 Tile: $01A  Pal: 1  Pri: 0  HF: 0  VF: 0
 Pattern pos: row 4, col 0
 Tile data VRAM addr: $0340

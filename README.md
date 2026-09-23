@@ -49,7 +49,7 @@ All tools accept addresses as hex strings or integers:
 - Motorola: `"$FF0000"` (preferred for M68000)
 - C-style: `"0xFF0000"`
 - Zilog: `"FF0000h"` (for Z80)
-- Integer: `16711680`
+- Integer: `16711680` (a bare number without `$`, `0x` or `h` is always decimal)
 
 All returned addresses use the Motorola `$XXXXXX` convention.
 

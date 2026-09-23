@@ -160,14 +160,15 @@ Use this as a first step when starting RE on an unknown ROM. The M68000 vector t
    - $000004: Reset vector (program entry point)
    - $000008: Bus error handler
    - $00000C: Address error handler
-3. `read_memory(device="Main 68000", address="$000060", length=16)` -- read interrupt vectors:
-   - $000064: Unused (external interrupt level 1)
-   - $000068: External interrupt level 2 (active low active, active on some HW revisions)
-   - $00006C: HBlank handler (horizontal blank interrupt)
-   - $000070: External interrupt level 4
-   - $000074: External interrupt level 5
-   - $000078: VBlank handler (vertical blank interrupt -- runs every frame)
-   - $00007C: External interrupt level 7
+3. `read_memory(device="Main 68000", address="$000060", length=32)` -- read the 68000 autovectors (levels 1-7). On the Mega Drive only levels 2, 4 and 6 are wired:
+   - $000060: Spurious interrupt
+   - $000064: Level 1 (unused)
+   - $000068: Level 2 -- external interrupt (EXT): TH pin of a controller port, used by light guns; enabled by VDP register 11 bit 3
+   - $00006C: Level 3 (unused)
+   - $000070: Level 4 -- HBlank handler (horizontal interrupt, enabled by VDP register 0 bit 4, interval in register 10)
+   - $000074: Level 5 (unused)
+   - $000078: Level 6 -- VBlank handler (vertical interrupt, enabled by VDP register 1 bit 5 -- runs every frame)
+   - $00007C: Level 7 (unused, NMI)
 4. `disassemble(device="Main 68000", address=RESET_VECTOR, count=30)` -- disassemble the reset/entry point to find initialization code
 5. `disassemble(device="Main 68000", address=VBLANK_VECTOR, count=30)` -- disassemble the VBlank handler (this is the main per-frame update, often calls game logic, DMA, controller reads)
 
