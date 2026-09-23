@@ -8,7 +8,9 @@ The default port is 8600, configurable via the extension's settings in the Exodu
 
 ## Communication Protocol
 
-The server operates via Streamable HTTP at the endpoint `POST http://localhost:8600/mcp` using JSON-RPC 2.0 format. The protocol version is `2024-11-05`.
+The server operates via Streamable HTTP at the endpoint `POST http://localhost:8600/mcp` using JSON-RPC 2.0 format. The server is stateless (no sessions, JSON responses only) and implements MCP `2026-07-28`, while still accepting `initialize`-handshake clients on `2025-11-25`, `2025-06-18`, `2025-03-26` and `2024-11-05`. `GET`/`DELETE` on `/mcp` return 405.
+
+Every tool carries annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`): only `run_system`, `stop_system`, `write_memory`, the breakpoint/watchpoint set/remove tools, `step_device` and `query_pixel` are marked non-read-only.
 
 ## Server Information
 
@@ -70,7 +72,7 @@ All addresses returned by tools use the Motorola `$XXXXXX` convention.
 ## Common Issues
 
 - Ensure ExodusMCP.dll is in the Assemblies folder and a system module is loaded
-- The server only binds to localhost (127.0.0.1) -- remote connections are not supported
+- The server only binds to localhost (127.0.0.1) -- remote connections are not supported, and requests with a non-local `Origin` header are rejected with 403
 - Most tools need a system module to be loaded -- load a Mega Drive module first
 - Memory read max size is 4096 bytes per call. Use `search_memory` for finding patterns across larger ranges
 - Device names must match the instance names shown by `list_devices`

@@ -195,7 +195,7 @@ When a watchpoint triggers, emulation pauses. Use `read_cpu_registers()` to see 
 | `read_palette()` | none | Read all 64 colors as 8-bit RGB |
 | `read_nametable(plane)` | plane required | Decode a plane's tile map |
 | `read_vdp_state()` | none | Read full VDP configuration |
-| `screenshot()` | none | Capture current frame as base64 PNG |
+| `screenshot()` | none | Save current frame to a temp PNG file, return its path |
 | `query_pixel(x, y)` | both required | Get rendering info for a screen pixel |
 
 ### read_sprite_table
