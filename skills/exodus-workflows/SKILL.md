@@ -73,7 +73,7 @@ Use this to understand the current state of all system components.
 5. `read_cpu_registers(device="Z80")` -- check sound CPU PC
 6. `read_vdp_state()` -- get VDP configuration (plane sizes, base addresses, display mode)
 7. `read_palette()` -- see current color palette
-8. `read_sprite_table()` -- see active sprites
+8. `read_sprite_table()` -- see active sprites (in link order, as the VDP draws them)
 9. `read_memory(device="Main 68000", address="$FF0000", length=256)` -- inspect start of 68K RAM
 
 ## Workflow F: Set Up Multi-Breakpoint Investigation
@@ -97,7 +97,7 @@ Use this to understand how the game renders graphics.
 2. `read_vdp_state()` -- get plane sizes, nametable addresses, scroll modes
 3. `read_nametable(plane="a")` -- see Plane A tile layout
 4. `read_nametable(plane="b")` -- see Plane B tile layout
-5. `read_sprite_table()` -- see all active sprites with positions, sizes, patterns
+5. `read_sprite_table()` -- see the sprites the VDP will draw (link chain from sprite 0) with positions, sizes, patterns
 6. `read_palette()` -- see all 64 colors across 4 palette rows
 7. `read_vram(address="$0000", length=32)` -- read a specific tile pattern (32 bytes = one 8x8 tile)
 8. `read_vsram(address="$00", length=80)` -- see per-column vertical scroll values

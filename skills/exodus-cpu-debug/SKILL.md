@@ -115,6 +115,8 @@ $000206  BNE.b    *+$6
 $00020E  MOVE.l   #$00FF0000, A0
 ```
 - `count` counts actual instructions, not bytes scanned -- data gaps don't reduce the count.
+- Non-code is scanned in steps of the CPU's minimum opcode size: 2 bytes on the 68000, 1 byte on the Z80.
+- A skipped run is capped at 256 bytes: if no valid instruction follows, the listing ends with `; stopped: no valid instruction within 256 bytes` (also `; stopped: end of address space` at the top of the address space). So you may get fewer than `count` instructions.
 - If disassembling a data region, most output will be skip comments. Use `read_memory` instead for raw data.
 
 ## Breakpoints (3 tools)
@@ -127,6 +129,8 @@ $00020E  MOVE.l   #$00FF0000, A0
 
 - `device` (string, required) -- processor instance name, e.g. `"Main 68000"`
 - `address` (string or int, required) -- breakpoint address, e.g. `"$000200"`
+
+`set_breakpoint` returns `{"address", "status": "set"}` only if the breakpoint was really configured; otherwise the call fails with a tool error (and no half-configured entry is left behind). `remove_breakpoint` errors if no breakpoint is set at that address or if it could not be removed.
 
 When a breakpoint hits, emulation pauses automatically. Use `read_cpu_registers()` to inspect, then `run_system()` or `step_device()` to continue.
 
@@ -143,6 +147,8 @@ When a breakpoint hits, emulation pauses automatically. Use `read_cpu_registers(
 - `size` (int, optional) -- range in bytes, default 1
 - `read` (bool, optional) -- break on reads, default false
 - `write` (bool, optional) -- break on writes, default true
+
+`set_watchpoint` returns a plain text confirmation (`Watchpoint set at $FF8E00 (4 bytes, write)`) only if the watchpoint was really configured; otherwise, or with `size=0`, the call fails with a tool error. `remove_watchpoint` errors if no watchpoint starts at that address or if it could not be removed.
 
 When a watchpoint triggers, emulation pauses. Use `read_cpu_registers()` to see which instruction caused the access and what values are in the registers (e.g. source pointer in A0).
 
@@ -195,7 +201,7 @@ When a watchpoint triggers, emulation pauses. Use `read_cpu_registers()` to see 
 
 | Tool | Parameters | Description |
 |------|-----------|-------------|
-| `read_sprite_table()` | none | Decode the full sprite attribute table |
+| `read_sprite_table()` | none | Decode the sprite list, following the link chain from sprite 0 |
 | `read_palette()` | none | Read all 64 colors as 8-bit RGB |
 | `read_nametable(plane)` | plane required | Decode a plane's tile map |
 | `read_vdp_state()` | none | Read full VDP configuration |
@@ -204,15 +210,19 @@ When a watchpoint triggers, emulation pauses. Use `read_cpu_registers()` to see 
 
 ### read_sprite_table
 
-No parameters. Returns plain text table (up to 80 entries):
+No parameters. Walks the sprite list the way the VDP does: starts at sprite 0 and follows the Link fields. Returns a header, one line per sprite in link order, and a line saying why the list ended:
 ```
-#    X      Y     W  H  Pat     Pal  Pri HF VF Link
-0    256    328   1x1 $1A0   0    1   0  0  1
-1    272    328   1x1 $1A4   0    1   0  0  0
+Sprite list: 3 sprite(s) in link order, H40 (max 80), table base $B800
+#    Idx  X      Y     W  H  Pat     Pal  Pri HF VF Link
+0    0    256    328   1x1 $1A0   0    1   0  0  5
+1    5    272    328   1x1 $1A4   0    1   0  0  2
+2    2    288    328   1x1 $1A8   0    1   0  0  0
+End of list: link 0
 ```
-- Values are raw attribute table fields: X/Y include the +128 offset (screen X = X-128, screen Y = Y-128), so the rows above are at screen (128,200) and (144,200).
+- Values are raw attribute table fields: X/Y include the +128 offset (screen X = X-128, screen Y = Y-128), so the rows above are at screen (128,200), (144,200) and (160,200).
 - W/H are size codes 0-3, i.e. cells minus 1 (`1x1` = 2x2 cells = 16x16 px). Pattern is the VRAM tile index.
-- Entries are listed in table order (#0, #1, #2...), not by following the links; the listing stops at the first entry after #0 whose Link is 0. Follow the Link column yourself to get the real drawing order.
+- `#` is the position in the list (drawing order: earlier sprites are drawn on top of later ones), `Idx` is the entry number in the sprite attribute table (use it to compute the entry address: base + Idx*8).
+- The list ends after a sprite whose Link is 0 (so sprite 0 alone is listed when its Link is 0), after a Link outside the table, or at the mode's maximum: 80 sprites in H40, 64 in H32. A Link back to an already listed sprite stops the walk with a `Stopped: ... (loop)` line. Table entries not reached by the chain are not displayed by the VDP and are not listed; use `read_vram` at the table base to see them.
 
 ### read_palette
 
