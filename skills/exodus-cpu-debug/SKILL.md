@@ -1,3 +1,7 @@
+---
+description: "Exodus (Sega Mega Drive/Genesis) MCP tool reference: system control, device listing, 68000/Z80 registers, memory read/write/search, disassembly, breakpoints, watchpoints, stepping, raw VDP VRAM/CRAM/VSRAM and registers, decoded sprites/palette/nametables/VDP state, screenshot and per-pixel rendering info. Use when debugging Mega Drive code, setting breakpoints or watchpoints, inspecting memory, or inspecting VDP graphics state."
+---
+
 # Exodus CPU Debugging & Memory Tools
 
 ## Address Format
@@ -185,7 +189,7 @@ When a watchpoint triggers, emulation pauses. Use `read_cpu_registers()` to see 
 - Prefer the decoded VDP tools below for sprite, palette, and nametable inspection.
 - `read_vdp_registers` returns plain text: `R00 = $04`, `R01 = $74`, etc.
 
-## VDP Decoded Data (4 tools)
+## VDP Decoded Data, Screenshot & Pixel Info (6 tools)
 
 **IMPORTANT:** VDP tools access VDP hardware directly. They do NOT take a `device` parameter — do not pass `device`.
 

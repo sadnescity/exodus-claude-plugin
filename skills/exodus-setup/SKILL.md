@@ -1,3 +1,7 @@
+---
+description: "Exodus MCP extension setup: installing ExodusMCP.dll, port 8600, Streamable HTTP transport, address formats, Mega Drive memory map and CPUs, tool categories, connection troubleshooting. Use when setting up or troubleshooting the Exodus MCP connection."
+---
+
 # Exodus MCP Server Setup Guide
 
 ## Key Configuration Points

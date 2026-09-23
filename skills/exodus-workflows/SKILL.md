@@ -1,3 +1,7 @@
+---
+description: "Exodus Mega Drive/Genesis reverse engineering workflows: find code that writes to RAM, cheat search, trace execution, verify ROM patches, find text strings and pointer tables, vector table/VBlank analysis, VDP DMA tracing, controller input tracing, game state machines, trace a screen pixel back to its tile in ROM. Use when planning or executing Mega Drive runtime debugging tasks."
+---
+
 # Exodus Reverse Engineering Workflows
 
 ## Workflow A: Find What Code Writes to a RAM Address
